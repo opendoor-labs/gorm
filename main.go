@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ type DB struct {
 
 	// single db
 	db                SQLCommon
+	ctx               context.Context
 	blockGlobalUpdate bool
 	logMode           int
 	logger            logger
@@ -70,6 +72,7 @@ func Open(dialect string, args ...interface{}) (db *DB, err error) {
 
 	db = &DB{
 		db:        dbSQL,
+		ctx:       context.TODO(),
 		logger:    defaultLogger,
 		values:    map[string]interface{}{},
 		callbacks: DefaultCallback,
@@ -189,6 +192,12 @@ func (s *DB) SubQuery() *expr {
 	scope.prepareQuerySQL()
 
 	return Expr(fmt.Sprintf("(%v)", scope.SQL), scope.SQLVars...)
+}
+
+func (s *DB) WithContext(ctx context.Context) *DB {
+	dbClone := s.clone()
+	dbClone.ctx = ctx
+	return dbClone
 }
 
 // Where return a new relation, filter records with given conditions, accepts `map`, `struct` or `string` as conditions, refer http://jinzhu.github.io/gorm/crud.html#query
@@ -579,7 +588,7 @@ func (s *DB) HasTable(value interface{}) bool {
 		tableName = scope.TableName()
 	}
 
-	has := scope.Dialect().HasTable(tableName)
+	has := scope.Dialect().HasTable(s.ctx, tableName)
 	s.AddError(scope.db.Error)
 	return has
 }
@@ -699,7 +708,7 @@ func (s *DB) SetJoinTableHandler(source interface{}, column string, handler Join
 				destination := (&Scope{Value: reflect.New(field.Struct.Type).Interface()}).GetModelStruct().ModelType
 				handler.Setup(field.Relationship, many2many, source, destination)
 				field.Relationship.JoinTableHandler = handler
-				if table := handler.Table(s); scope.Dialect().HasTable(table) {
+				if table := handler.Table(s); scope.Dialect().HasTable(s.ctx, table) {
 					s.Table(table).AutoMigrate(handler)
 				}
 			}
@@ -746,6 +755,7 @@ func (s *DB) GetErrors() []error {
 func (s *DB) clone() *DB {
 	db := &DB{
 		db:                s.db,
+		ctx:               s.ctx,
 		parent:            s.parent,
 		logger:            s.logger,
 		logMode:           s.logMode,
