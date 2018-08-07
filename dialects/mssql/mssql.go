@@ -129,12 +129,12 @@ func (s mssql) HasIndexContext(ctx context.Context, tableName string, indexName 
 	return count > 0
 }
 
-func (s mssql) RemoveIndex(ctx context.Context, tableName string, indexName string) error {
+func (s mssql) RemoveIndexContext(ctx context.Context, tableName string, indexName string) error {
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("DROP INDEX %v ON %v", indexName, s.Quote(tableName)))
 	return err
 }
 
-func (s mssql) HasForeignKey(ctx context.Context, tableName string, foreignKeyName string) bool {
+func (s mssql) HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
 	s.db.QueryRowContext(ctx, `SELECT count(*)
@@ -145,26 +145,26 @@ func (s mssql) HasForeignKey(ctx context.Context, tableName string, foreignKeyNa
 	return count > 0
 }
 
-func (s mssql) HasTable(ctx context.Context, tableName string) bool {
+func (s mssql) HasTableContext(ctx context.Context, tableName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.tables WHERE table_name = ? AND table_catalog = ?", tableName, currentDatabase).Scan(&count)
 	return count > 0
 }
 
-func (s mssql) HasColumn(ctx context.Context, tableName string, columnName string) bool {
+func (s mssql) HasColumnContext(ctx context.Context, tableName string, columnName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.columns WHERE table_catalog = ? AND table_name = ? AND column_name = ?", currentDatabase, tableName, columnName).Scan(&count)
 	return count > 0
 }
 
-func (s mssql) ModifyColumn(ctx context.Context, tableName string, columnName string, typ string) error {
+func (s mssql) ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error {
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v %v", tableName, columnName, typ))
 	return err
 }
 
-func (s mssql) CurrentDatabase(ctx context.Context) (name string) {
+func (s mssql) CurrentDatabaseContext(ctx context.Context) (name string) {
 	s.db.QueryRowContext(ctx, "SELECT DB_NAME() AS [Current Database]").Scan(&name)
 	return
 }
@@ -204,7 +204,7 @@ func currentDatabaseAndTable(ctx context.Context, dialect gorm.Dialect, tableNam
 		splitStrings := strings.SplitN(tableName, ".", 2)
 		return splitStrings[0], splitStrings[1]
 	}
-	return dialect.CurrentDatabase(ctx), tableName
+	return dialect.CurrentDatabaseContext(ctx), tableName
 }
 
 // JSON type to support easy handling of JSON data in character table fields

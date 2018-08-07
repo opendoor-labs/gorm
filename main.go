@@ -568,15 +568,15 @@ func (s *DB) DropTable(values ...interface{}) *DB {
 func (s *DB) DropTableIfExists(values ...interface{}) *DB {
 	db := s.clone()
 	for _, value := range values {
-		if s.HasTable(value) {
+		if s.HasTableContext(value) {
 			db.AddError(s.DropTable(value).Error)
 		}
 	}
 	return db
 }
 
-// HasTable check has table or not
-func (s *DB) HasTable(value interface{}) bool {
+// HasTableContext check has table or not
+func (s *DB) HasTableContext(value interface{}) bool {
 	var (
 		scope     = s.NewScope(value)
 		tableName string
@@ -588,7 +588,7 @@ func (s *DB) HasTable(value interface{}) bool {
 		tableName = scope.TableName()
 	}
 
-	has := scope.Dialect().HasTable(s.ctx, tableName)
+	has := scope.Dialect().HasTableContext(s.ctx, tableName)
 	s.AddError(scope.db.Error)
 	return has
 }
@@ -630,10 +630,10 @@ func (s *DB) AddUniqueIndex(indexName string, columns ...string) *DB {
 	return scope.db
 }
 
-// RemoveIndex remove index with name
-func (s *DB) RemoveIndex(indexName string) *DB {
+// RemoveIndexContext remove index with name
+func (s *DB) RemoveIndexContext(indexName string) *DB {
 	scope := s.NewScope(s.Value)
-	scope.removeIndex(indexName)
+	scope.RemoveIndexContext(indexName)
 	return scope.db
 }
 
@@ -708,7 +708,7 @@ func (s *DB) SetJoinTableHandler(source interface{}, column string, handler Join
 				destination := (&Scope{Value: reflect.New(field.Struct.Type).Interface()}).GetModelStruct().ModelType
 				handler.Setup(field.Relationship, many2many, source, destination)
 				field.Relationship.JoinTableHandler = handler
-				if table := handler.Table(s); scope.Dialect().HasTable(s.ctx, table) {
+				if table := handler.Table(s); scope.Dialect().HasTableContext(s.ctx, table) {
 					s.Table(table).AutoMigrate(handler)
 				}
 			}

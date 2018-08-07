@@ -31,7 +31,7 @@ func TestPrefixColumnNameForEmbeddedStruct(t *testing.T) {
 	dialect := scope.Dialect()
 	ctx := scope.Context()
 	engadgetPostScope := DB.NewScope(&EngadgetPost{})
-	if !dialect.HasColumn(ctx, engadgetPostScope.TableName(), "author_id") || !dialect.HasColumn(ctx, engadgetPostScope.TableName(), "author_name") || !dialect.HasColumn(ctx, engadgetPostScope.TableName(), "author_email") {
+	if !dialect.HasColumnContext(ctx, engadgetPostScope.TableName(), "author_id") || !dialect.HasColumnContext(ctx, engadgetPostScope.TableName(), "author_name") || !dialect.HasColumnContext(ctx, engadgetPostScope.TableName(), "author_email") {
 		t.Errorf("should has prefix for embedded columns")
 	}
 
@@ -40,7 +40,7 @@ func TestPrefixColumnNameForEmbeddedStruct(t *testing.T) {
 	}
 
 	hnScope := DB.NewScope(&HNPost{})
-	if !dialect.HasColumn(ctx, hnScope.TableName(), "user_id") || !dialect.HasColumn(ctx, hnScope.TableName(), "user_name") || !dialect.HasColumn(ctx, hnScope.TableName(), "user_email") {
+	if !dialect.HasColumnContext(ctx, hnScope.TableName(), "user_id") || !dialect.HasColumnContext(ctx, hnScope.TableName(), "user_name") || !dialect.HasColumnContext(ctx, hnScope.TableName(), "user_email") {
 		t.Errorf("should has prefix for embedded columns")
 	}
 }

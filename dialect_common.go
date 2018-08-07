@@ -105,35 +105,35 @@ func (s commonDialect) HasIndexContext(ctx context.Context, tableName string, in
 	return count > 0
 }
 
-func (s commonDialect) RemoveIndex(ctx context.Context, tableName string, indexName string) error {
+func (s commonDialect) RemoveIndexContext(ctx context.Context, tableName string, indexName string) error {
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("DROP INDEX %v", indexName))
 	return err
 }
 
-func (s commonDialect) HasForeignKey(ctx context.Context, tableName string, foreignKeyName string) bool {
+func (s commonDialect) HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool {
 	return false
 }
 
-func (s commonDialect) HasTable(ctx context.Context, tableName string) bool {
+func (s commonDialect) HasTableContext(ctx context.Context, tableName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = ? AND table_name = ?", currentDatabase, tableName).Scan(&count)
 	return count > 0
 }
 
-func (s commonDialect) HasColumn(ctx context.Context, tableName string, columnName string) bool {
+func (s commonDialect) HasColumnContext(ctx context.Context, tableName string, columnName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = ? AND table_name = ? AND column_name = ?", currentDatabase, tableName, columnName).Scan(&count)
 	return count > 0
 }
 
-func (s commonDialect) ModifyColumn(ctx context.Context, tableName string, columnName string, typ string) error {
+func (s commonDialect) ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error {
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v TYPE %v", tableName, columnName, typ))
 	return err
 }
 
-func (s commonDialect) CurrentDatabase(ctx context.Context) (name string) {
+func (s commonDialect) CurrentDatabaseContext(ctx context.Context) (name string) {
 	s.db.QueryRowContext(ctx, "SELECT DATABASE()").Scan(&name)
 	return
 }

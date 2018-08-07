@@ -195,18 +195,18 @@ func (c Cart) TableName() string {
 	return "shopping_cart"
 }
 
-func TestHasTable(t *testing.T) {
+func TestHasTableContext(t *testing.T) {
 	type Foo struct {
 		Id    int
 		Stuff string
 	}
 	DB.DropTable(&Foo{})
 
-	// Table should not exist at this point, HasTable should return false
-	if ok := DB.HasTable("foos"); ok {
+	// Table should not exist at this point, HasTableContext should return false
+	if ok := DB.HasTableContext("foos"); ok {
 		t.Errorf("Table should not exist, but does")
 	}
-	if ok := DB.HasTable(&Foo{}); ok {
+	if ok := DB.HasTableContext(&Foo{}); ok {
 		t.Errorf("Table should not exist, but does")
 	}
 
@@ -215,12 +215,12 @@ func TestHasTable(t *testing.T) {
 		t.Errorf("Table should be created")
 	}
 
-	// And now it should exits, and HasTable should return true
-	if ok := DB.HasTable("foos"); !ok {
-		t.Errorf("Table should exist, but HasTable informs it does not")
+	// And now it should exits, and HasTableContext should return true
+	if ok := DB.HasTableContext("foos"); !ok {
+		t.Errorf("Table should exist, but HasTableContext informs it does not")
 	}
-	if ok := DB.HasTable(&Foo{}); !ok {
-		t.Errorf("Table should exist, but HasTable informs it does not")
+	if ok := DB.HasTableContext(&Foo{}); !ok {
+		t.Errorf("Table should exist, but HasTableContext informs it does not")
 	}
 }
 

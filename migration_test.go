@@ -304,7 +304,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Email should have index idx_email_email")
 	}
 
-	if err := DB.Model(&Email{}).RemoveIndex("idx_email_email").Error; err != nil {
+	if err := DB.Model(&Email{}).RemoveIndexContext("idx_email_email").Error; err != nil {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
@@ -320,7 +320,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Email should have index idx_email_email_and_user_id")
 	}
 
-	if err := DB.Model(&Email{}).RemoveIndex("idx_email_email_and_user_id").Error; err != nil {
+	if err := DB.Model(&Email{}).RemoveIndexContext("idx_email_email_and_user_id").Error; err != nil {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
@@ -350,7 +350,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Should get no duplicated email error when insert duplicated emails for a user")
 	}
 
-	if err := DB.Model(&Email{}).RemoveIndex("idx_email_email_and_user_id").Error; err != nil {
+	if err := DB.Model(&Email{}).RemoveIndexContext("idx_email_email_and_user_id").Error; err != nil {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
@@ -409,11 +409,11 @@ func TestCreateAndAutomigrateTransaction(t *testing.T) {
 		}
 		DB.DropTableIfExists(&Bar{})
 
-		if ok := DB.HasTable("bars"); ok {
+		if ok := DB.HasTableContext("bars"); ok {
 			t.Errorf("Table should not exist, but does")
 		}
 
-		if ok := tx.HasTable("bars"); ok {
+		if ok := tx.HasTableContext("bars"); ok {
 			t.Errorf("Table should not exist, but does")
 		}
 	}()
@@ -428,7 +428,7 @@ func TestCreateAndAutomigrateTransaction(t *testing.T) {
 			t.Errorf("Should have been able to create the table, but couldn't: %s", err)
 		}
 
-		if ok := tx.HasTable(&Bar{}); !ok {
+		if ok := tx.HasTableContext(&Bar{}); !ok {
 			t.Errorf("The transaction should be able to see the table")
 		}
 	}()

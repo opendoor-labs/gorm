@@ -26,16 +26,16 @@ type Dialect interface {
 
 	// HasIndex check has index or not
 	HasIndexContext(ctx context.Context, tableName string, indexName string) bool
-	// HasForeignKey check has foreign key or not
-	HasForeignKey(ctx context.Context, tableName string, foreignKeyName string) bool
-	// RemoveIndex remove index
-	RemoveIndex(ctx context.Context, tableName string, indexName string) error
-	// HasTable check has table or not
-	HasTable(ctx context.Context, tableName string) bool
-	// HasColumn check has column or not
-	HasColumn(ctx context.Context, tableName string, columnName string) bool
-	// ModifyColumn modify column's type
-	ModifyColumn(ctx context.Context, tableName string, columnName string, typ string) error
+	// HasForeignKeyContext check has foreign key or not
+	HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool
+	// RemoveIndexContext remove index
+	RemoveIndexContext(ctx context.Context, tableName string, indexName string) error
+	// HasTableContext check has table or not
+	HasTableContext(ctx context.Context, tableName string) bool
+	// HasColumnContext check has column or not
+	HasColumnContext(ctx context.Context, tableName string, columnName string) bool
+	// ModifyColumnContext modify column's type
+	ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error
 
 	// LimitAndOffsetSQL return generated SQL with Limit and Offset, as mssql has special case
 	LimitAndOffsetSQL(limit, offset interface{}) string
@@ -50,7 +50,7 @@ type Dialect interface {
 	BuildKeyName(kind, tableName string, fields ...string) string
 
 	// CurrentDatabase return current database name
-	CurrentDatabase(ctx context.Context) string
+	CurrentDatabaseContext(ctx context.Context) string
 }
 
 var dialectsMap = map[string]Dialect{}
@@ -133,5 +133,5 @@ func currentDatabaseAndTable(ctx context.Context, dialect Dialect, tableName str
 		splitStrings := strings.SplitN(tableName, ".", 2)
 		return splitStrings[0], splitStrings[1]
 	}
-	return dialect.CurrentDatabase(ctx), tableName
+	return dialect.CurrentDatabaseContext(ctx), tableName
 }
