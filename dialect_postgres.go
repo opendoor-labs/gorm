@@ -92,7 +92,7 @@ func (s *postgres) DataTypeOf(field *StructField) string {
 	return fmt.Sprintf("%v %v", sqlType, additionalType)
 }
 
-func (s postgres) HasIndex(ctx context.Context, tableName string, indexName string) bool {
+func (s postgres) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_indexes WHERE tablename = $1 AND indexname = $2 AND schemaname = CURRENT_SCHEMA()", tableName, indexName).Scan(&count)
 	return count > 0

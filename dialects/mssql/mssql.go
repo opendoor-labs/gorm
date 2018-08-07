@@ -13,7 +13,7 @@ import (
 
 	// Importing mssql driver package only in dialect file, otherwide not needed
 	_ "github.com/denisenkom/go-mssqldb"
-	"github.com/jinzhu/gorm"
+	"github.com/opendoor-labs/gorm"
 )
 
 func setIdentityInsert(scope *gorm.Scope) {
@@ -123,7 +123,7 @@ func (s mssql) fieldCanAutoIncrement(field *gorm.StructField) bool {
 	return field.IsPrimaryKey
 }
 
-func (s mssql) HasIndex(ctx context.Context, tableName string, indexName string) bool {
+func (s mssql) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM sys.indexes WHERE name=? AND object_id=OBJECT_ID(?)", indexName, tableName).Scan(&count)
 	return count > 0
@@ -134,10 +134,10 @@ func (s mssql) RemoveIndex(ctx context.Context, tableName string, indexName stri
 	return err
 }
 
-func (s mssql) HasForeignKey(tableName string, foreignKeyName string) bool {
+func (s mssql) HasForeignKey(ctx context.Context, tableName string, foreignKeyName string) bool {
 	var count int
-	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
-	s.db.QueryRowContext(`SELECT count(*)
+	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
+	s.db.QueryRowContext(ctx, `SELECT count(*)
 	FROM sys.foreign_keys as F inner join sys.tables as T on F.parent_object_id=T.object_id
 		inner join information_schema.tables as I on I.TABLE_NAME = T.name
 	WHERE F.name = ?

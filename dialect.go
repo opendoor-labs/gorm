@@ -25,7 +25,7 @@ type Dialect interface {
 	DataTypeOf(field *StructField) string
 
 	// HasIndex check has index or not
-	HasIndex(ctx context.Context, tableName string, indexName string) bool
+	HasIndexContext(ctx context.Context, tableName string, indexName string) bool
 	// HasForeignKey check has foreign key or not
 	HasForeignKey(ctx context.Context, tableName string, foreignKeyName string) bool
 	// RemoveIndex remove index

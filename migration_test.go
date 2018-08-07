@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	"github.com/opendoor-labs/gorm"
 )
 
 type User struct {
@@ -300,7 +300,7 @@ func TestIndexes(t *testing.T) {
 
 	scope := DB.NewScope(&Email{})
 	ctx := scope.Context()
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_email") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email") {
 		t.Errorf("Email should have index idx_email_email")
 	}
 
@@ -308,7 +308,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
-	if scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_email") {
+	if scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email") {
 		t.Errorf("Email's index idx_email_email should be deleted")
 	}
 
@@ -316,7 +316,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to create index: %+v", err)
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email should have index idx_email_email_and_user_id")
 	}
 
@@ -324,7 +324,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
-	if scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email's index idx_email_email_and_user_id should be deleted")
 	}
 
@@ -332,7 +332,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to create index: %+v", err)
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email should have index idx_email_email_and_user_id")
 	}
 
@@ -354,7 +354,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
-	if scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email's index idx_email_email_and_user_id should be deleted")
 	}
 
@@ -385,11 +385,11 @@ func TestAutoMigration(t *testing.T) {
 
 	scope := DB.NewScope(&EmailWithIdx{})
 	ctx := scope.Context()
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_email_agent") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_agent") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "uix_email_with_idxes_registered_at") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_email_with_idxes_registered_at") {
 		t.Errorf("Failed to create index")
 	}
 
@@ -469,23 +469,23 @@ func TestMultipleIndexes(t *testing.T) {
 
 	scope := DB.NewScope(&MultipleIndexes{})
 	ctx := scope.Context()
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "uix_multipleindexes_user_name") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_multipleindexes_user_name") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "uix_multipleindexes_user_email") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_multipleindexes_user_email") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "uix_multiple_indexes_email") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_multiple_indexes_email") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_multipleindexes_user_other") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_multipleindexes_user_other") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndex(ctx, scope.TableName(), "idx_multiple_indexes_other") {
+	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_multiple_indexes_other") {
 		t.Errorf("Failed to create index")
 	}
 

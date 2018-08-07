@@ -71,7 +71,7 @@ func (s *sqlite3) DataTypeOf(field *StructField) string {
 	return fmt.Sprintf("%v %v", sqlType, additionalType)
 }
 
-func (s sqlite3) HasIndex(ctx context.Context, tableName string, indexName string) bool {
+func (s sqlite3) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
 	s.db.QueryRowContext(ctx, fmt.Sprintf("SELECT count(*) FROM sqlite_master WHERE tbl_name = ? AND sql LIKE '%%INDEX %v ON%%'", indexName), tableName).Scan(&count)
 	return count > 0

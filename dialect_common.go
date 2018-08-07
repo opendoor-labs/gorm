@@ -98,7 +98,7 @@ func (s *commonDialect) DataTypeOf(field *StructField) string {
 	return fmt.Sprintf("%v %v", sqlType, additionalType)
 }
 
-func (s commonDialect) HasIndex(ctx context.Context, tableName string, indexName string) bool {
+func (s commonDialect) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema = ? AND table_name = ? AND index_name = ?", currentDatabase, tableName, indexName).Scan(&count)

@@ -1191,7 +1191,7 @@ func (scope *Scope) dropColumn(column string) {
 }
 
 func (scope *Scope) addIndex(unique bool, indexName string, column ...string) {
-	if scope.Dialect().HasIndex(scope.db.ctx, scope.TableName(), indexName) {
+	if scope.Dialect().HasIndexContext(scope.db.ctx, scope.TableName(), indexName) {
 		return
 	}
 
