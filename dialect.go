@@ -25,15 +25,27 @@ type Dialect interface {
 	DataTypeOf(field *StructField) string
 
 	// HasIndex check has index or not
+	HasIndex(tableName string, indexName string) bool
+	// HasIndexContext check has index or not
 	HasIndexContext(ctx context.Context, tableName string, indexName string) bool
+	// HasForeignKey check has foreign key or not
+	HasForeignKey(tableName string, foreignKeyName string) bool
 	// HasForeignKeyContext check has foreign key or not
 	HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool
+	// RemoveIndex remove index
+	RemoveIndex(tableName string, indexName string) error
 	// RemoveIndexContext remove index
 	RemoveIndexContext(ctx context.Context, tableName string, indexName string) error
+	// HasTable check has table or not
+	HasTable(tableName string) bool
 	// HasTableContext check has table or not
 	HasTableContext(ctx context.Context, tableName string) bool
+	// HasColumn check has column or not
+	HasColumn(tableName string, columnName string) bool
 	// HasColumnContext check has column or not
 	HasColumnContext(ctx context.Context, tableName string, columnName string) bool
+	// ModifyColumn modify column's type
+	ModifyColumn(tableName string, columnName string, typ string) error
 	// ModifyColumnContext modify column's type
 	ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error
 
@@ -50,6 +62,8 @@ type Dialect interface {
 	BuildKeyName(kind, tableName string, fields ...string) string
 
 	// CurrentDatabase return current database name
+	CurrentDatabase() string
+	// CurrentDatabaseContext return current database name
 	CurrentDatabaseContext(ctx context.Context) string
 }
 

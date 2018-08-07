@@ -98,6 +98,10 @@ func (s *commonDialect) DataTypeOf(field *StructField) string {
 	return fmt.Sprintf("%v %v", sqlType, additionalType)
 }
 
+func (s commonDialect) HasIndex(tableName string, indexName string) bool {
+	return s.HasIndexContext(context.Background(), tableName, indexName)
+}
+
 func (s commonDialect) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
@@ -105,13 +109,25 @@ func (s commonDialect) HasIndexContext(ctx context.Context, tableName string, in
 	return count > 0
 }
 
+func (s commonDialect) RemoveIndex(tableName string, indexName string) error {
+	return s.RemoveIndexContext(context.Background(), tableName, indexName)
+}
+
 func (s commonDialect) RemoveIndexContext(ctx context.Context, tableName string, indexName string) error {
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("DROP INDEX %v", indexName))
 	return err
 }
 
+func (s commonDialect) HasForeignKey(tableName string, foreignKeyName string) bool {
+	return s.HasForeignKeyContext(context.Background(), tableName, foreignKeyName)
+}
+
 func (s commonDialect) HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool {
 	return false
+}
+
+func (s commonDialect) HasTable(tableName string) bool {
+	return s.HasTableContext(context.Background(), tableName)
 }
 
 func (s commonDialect) HasTableContext(ctx context.Context, tableName string) bool {
@@ -121,6 +137,10 @@ func (s commonDialect) HasTableContext(ctx context.Context, tableName string) bo
 	return count > 0
 }
 
+func (s commonDialect) HasColumn(tableName string, columnName string) bool {
+	return s.HasColumnContext(context.Background(), tableName, columnName)
+}
+
 func (s commonDialect) HasColumnContext(ctx context.Context, tableName string, columnName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
@@ -128,11 +148,18 @@ func (s commonDialect) HasColumnContext(ctx context.Context, tableName string, c
 	return count > 0
 }
 
+func (s commonDialect) ModifyColumn(tableName string, columnName string, typ string) error {
+	return s.ModifyColumnContext(context.Background(), tableName, columnName, typ)
+}
+
 func (s commonDialect) ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error {
 	_, err := s.db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v TYPE %v", tableName, columnName, typ))
 	return err
 }
 
+func (s commonDialect) CurrentDatabase() (name string) {
+	return s.CurrentDatabaseContext(context.Background())
+}
 func (s commonDialect) CurrentDatabaseContext(ctx context.Context) (name string) {
 	s.db.QueryRowContext(ctx, "SELECT DATABASE()").Scan(&name)
 	return

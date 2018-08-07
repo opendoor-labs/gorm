@@ -92,10 +92,18 @@ func (s *postgres) DataTypeOf(field *StructField) string {
 	return fmt.Sprintf("%v %v", sqlType, additionalType)
 }
 
+func (s postgres) HasIndex(tableName string, indexName string) bool {
+	return s.HasIndexContext(context.Background(), tableName, indexName)
+}
+
 func (s postgres) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_indexes WHERE tablename = $1 AND indexname = $2 AND schemaname = CURRENT_SCHEMA()", tableName, indexName).Scan(&count)
 	return count > 0
+}
+
+func (s postgres) HasForeignKey(tableName string, foreignKeyName string) bool {
+	return s.HasForeignKeyContext(context.Background(), tableName, foreignKeyName)
 }
 
 func (s postgres) HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool {
@@ -104,16 +112,28 @@ func (s postgres) HasForeignKeyContext(ctx context.Context, tableName string, fo
 	return count > 0
 }
 
+func (s postgres) HasTable(tableName string) bool {
+	return s.HasTableContext(context.Background(), tableName)
+}
+
 func (s postgres) HasTableContext(ctx context.Context, tableName string) bool {
 	var count int
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.tables WHERE table_name = $1 AND table_type = 'BASE TABLE' AND table_schema = CURRENT_SCHEMA()", tableName).Scan(&count)
 	return count > 0
 }
 
+func (s postgres) HasColumn(tableName string, columnName string) bool {
+	return s.HasColumnContext(context.Background(), tableName, columnName)
+}
+
 func (s postgres) HasColumnContext(ctx context.Context, tableName string, columnName string) bool {
 	var count int
 	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.columns WHERE table_name = $1 AND column_name = $2 AND table_schema = CURRENT_SCHEMA()", tableName, columnName).Scan(&count)
 	return count > 0
+}
+
+func (s postgres) CurrentDatabase() (name string) {
+	return s.CurrentDatabaseContext(context.Background())
 }
 
 func (s postgres) CurrentDatabaseContext(ctx context.Context) (name string) {
