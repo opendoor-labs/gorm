@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ type DB struct {
 
 	// single db
 	db                SQLCommon
+	ctx               context.Context
 	blockGlobalUpdate bool
 	logMode           int
 	logger            logger
@@ -37,10 +39,10 @@ type DB struct {
 //       db, err := gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local")
 //     }
 // GORM has wrapped some drivers, for easier to remember driver's import path, so you could import the mysql driver with
-//    import _ "github.com/jinzhu/gorm/dialects/mysql"
-//    // import _ "github.com/jinzhu/gorm/dialects/postgres"
-//    // import _ "github.com/jinzhu/gorm/dialects/sqlite"
-//    // import _ "github.com/jinzhu/gorm/dialects/mssql"
+//    import _ "github.com/opendoor-labs/gorm/dialects/mysql"
+//    // import _ "github.com/opendoor-labs/gorm/dialects/postgres"
+//    // import _ "github.com/opendoor-labs/gorm/dialects/sqlite"
+//    // import _ "github.com/opendoor-labs/gorm/dialects/mssql"
 func Open(dialect string, args ...interface{}) (db *DB, err error) {
 	if len(args) == 0 {
 		err = errors.New("invalid database source")
@@ -70,6 +72,7 @@ func Open(dialect string, args ...interface{}) (db *DB, err error) {
 
 	db = &DB{
 		db:        dbSQL,
+		ctx:       context.TODO(),
 		logger:    defaultLogger,
 		values:    map[string]interface{}{},
 		callbacks: DefaultCallback,
@@ -189,6 +192,12 @@ func (s *DB) SubQuery() *expr {
 	scope.prepareQuerySQL()
 
 	return Expr(fmt.Sprintf("(%v)", scope.SQL), scope.SQLVars...)
+}
+
+func (s *DB) WithContext(ctx context.Context) *DB {
+	dbClone := s.clone()
+	dbClone.ctx = ctx
+	return dbClone
 }
 
 // Where return a new relation, filter records with given conditions, accepts `map`, `struct` or `string` as conditions, refer http://jinzhu.github.io/gorm/crud.html#query
@@ -559,15 +568,15 @@ func (s *DB) DropTable(values ...interface{}) *DB {
 func (s *DB) DropTableIfExists(values ...interface{}) *DB {
 	db := s.clone()
 	for _, value := range values {
-		if s.HasTable(value) {
+		if s.HasTableContext(value) {
 			db.AddError(s.DropTable(value).Error)
 		}
 	}
 	return db
 }
 
-// HasTable check has table or not
-func (s *DB) HasTable(value interface{}) bool {
+// HasTableContext check has table or not
+func (s *DB) HasTableContext(value interface{}) bool {
 	var (
 		scope     = s.NewScope(value)
 		tableName string
@@ -579,7 +588,7 @@ func (s *DB) HasTable(value interface{}) bool {
 		tableName = scope.TableName()
 	}
 
-	has := scope.Dialect().HasTable(tableName)
+	has := scope.Dialect().HasTableContext(s.ctx, tableName)
 	s.AddError(scope.db.Error)
 	return has
 }
@@ -621,10 +630,10 @@ func (s *DB) AddUniqueIndex(indexName string, columns ...string) *DB {
 	return scope.db
 }
 
-// RemoveIndex remove index with name
-func (s *DB) RemoveIndex(indexName string) *DB {
+// RemoveIndexContext remove index with name
+func (s *DB) RemoveIndexContext(indexName string) *DB {
 	scope := s.NewScope(s.Value)
-	scope.removeIndex(indexName)
+	scope.RemoveIndexContext(indexName)
 	return scope.db
 }
 
@@ -699,7 +708,7 @@ func (s *DB) SetJoinTableHandler(source interface{}, column string, handler Join
 				destination := (&Scope{Value: reflect.New(field.Struct.Type).Interface()}).GetModelStruct().ModelType
 				handler.Setup(field.Relationship, many2many, source, destination)
 				field.Relationship.JoinTableHandler = handler
-				if table := handler.Table(s); scope.Dialect().HasTable(table) {
+				if table := handler.Table(s); scope.Dialect().HasTableContext(s.ctx, table) {
 					s.Table(table).AutoMigrate(handler)
 				}
 			}
@@ -746,6 +755,7 @@ func (s *DB) GetErrors() []error {
 func (s *DB) clone() *DB {
 	db := &DB{
 		db:                s.db,
+		ctx:               s.ctx,
 		parent:            s.parent,
 		logger:            s.logger,
 		logMode:           s.logMode,

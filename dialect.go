@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
@@ -25,16 +26,28 @@ type Dialect interface {
 
 	// HasIndex check has index or not
 	HasIndex(tableName string, indexName string) bool
+	// HasIndexContext check has index or not
+	HasIndexContext(ctx context.Context, tableName string, indexName string) bool
 	// HasForeignKey check has foreign key or not
 	HasForeignKey(tableName string, foreignKeyName string) bool
+	// HasForeignKeyContext check has foreign key or not
+	HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool
 	// RemoveIndex remove index
 	RemoveIndex(tableName string, indexName string) error
+	// RemoveIndexContext remove index
+	RemoveIndexContext(ctx context.Context, tableName string, indexName string) error
 	// HasTable check has table or not
 	HasTable(tableName string) bool
+	// HasTableContext check has table or not
+	HasTableContext(ctx context.Context, tableName string) bool
 	// HasColumn check has column or not
 	HasColumn(tableName string, columnName string) bool
+	// HasColumnContext check has column or not
+	HasColumnContext(ctx context.Context, tableName string, columnName string) bool
 	// ModifyColumn modify column's type
 	ModifyColumn(tableName string, columnName string, typ string) error
+	// ModifyColumnContext modify column's type
+	ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error
 
 	// LimitAndOffsetSQL return generated SQL with Limit and Offset, as mssql has special case
 	LimitAndOffsetSQL(limit, offset interface{}) string
@@ -50,6 +63,8 @@ type Dialect interface {
 
 	// CurrentDatabase return current database name
 	CurrentDatabase() string
+	// CurrentDatabaseContext return current database name
+	CurrentDatabaseContext(ctx context.Context) string
 }
 
 var dialectsMap = map[string]Dialect{}
@@ -127,10 +142,10 @@ var ParseFieldStructForDialect = func(field *StructField, dialect Dialect) (fiel
 	return fieldValue, dataType, size, strings.TrimSpace(additionalType)
 }
 
-func currentDatabaseAndTable(dialect Dialect, tableName string) (string, string) {
+func currentDatabaseAndTable(ctx context.Context, dialect Dialect, tableName string) (string, string) {
 	if strings.Contains(tableName, ".") {
 		splitStrings := strings.SplitN(tableName, ".", 2)
 		return splitStrings[0], splitStrings[1]
 	}
-	return dialect.CurrentDatabase(), tableName
+	return dialect.CurrentDatabaseContext(ctx), tableName
 }
