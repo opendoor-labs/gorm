@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ type DB struct {
 
 	// single db
 	db                SQLCommon
+	ctx               context.Context
 	blockGlobalUpdate bool
 	logMode           int
 	logger            logger
@@ -37,10 +39,10 @@ type DB struct {
 //       db, err := gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local")
 //     }
 // GORM has wrapped some drivers, for easier to remember driver's import path, so you could import the mysql driver with
-//    import _ "github.com/jinzhu/gorm/dialects/mysql"
-//    // import _ "github.com/jinzhu/gorm/dialects/postgres"
-//    // import _ "github.com/jinzhu/gorm/dialects/sqlite"
-//    // import _ "github.com/jinzhu/gorm/dialects/mssql"
+//    import _ "github.com/opendoor-labs/gorm/dialects/mysql"
+//    // import _ "github.com/opendoor-labs/gorm/dialects/postgres"
+//    // import _ "github.com/opendoor-labs/gorm/dialects/sqlite"
+//    // import _ "github.com/opendoor-labs/gorm/dialects/mssql"
 func Open(dialect string, args ...interface{}) (db *DB, err error) {
 	if len(args) == 0 {
 		err = errors.New("invalid database source")
@@ -70,6 +72,7 @@ func Open(dialect string, args ...interface{}) (db *DB, err error) {
 
 	db = &DB{
 		db:        dbSQL,
+		ctx:       context.TODO(),
 		logger:    defaultLogger,
 		values:    map[string]interface{}{},
 		callbacks: DefaultCallback,
@@ -189,6 +192,13 @@ func (s *DB) SubQuery() *expr {
 	scope.prepareQuerySQL()
 
 	return Expr(fmt.Sprintf("(%v)", scope.SQL), scope.SQLVars...)
+}
+
+// WithContext adds context to the current DB
+func (s *DB) WithContext(ctx context.Context) *DB {
+	dbClone := s.clone()
+	dbClone.ctx = ctx
+	return dbClone
 }
 
 // Where return a new relation, filter records with given conditions, accepts `map`, `struct` or `string` as conditions, refer http://jinzhu.github.io/gorm/crud.html#query
@@ -746,6 +756,7 @@ func (s *DB) GetErrors() []error {
 func (s *DB) clone() *DB {
 	db := &DB{
 		db:                s.db,
+		ctx:               s.ctx,
 		parent:            s.parent,
 		logger:            s.logger,
 		logMode:           s.logMode,
