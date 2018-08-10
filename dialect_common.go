@@ -1,7 +1,6 @@
 package gorm
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -99,69 +98,42 @@ func (s *commonDialect) DataTypeOf(field *StructField) string {
 }
 
 func (s commonDialect) HasIndex(tableName string, indexName string) bool {
-	return s.HasIndexContext(context.Background(), tableName, indexName)
-}
-
-func (s commonDialect) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
-	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
-	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema = ? AND table_name = ? AND index_name = ?", currentDatabase, tableName, indexName).Scan(&count)
+	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
+	s.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema = ? AND table_name = ? AND index_name = ?", currentDatabase, tableName, indexName).Scan(&count)
 	return count > 0
 }
 
 func (s commonDialect) RemoveIndex(tableName string, indexName string) error {
-	return s.RemoveIndexContext(context.Background(), tableName, indexName)
-}
-
-func (s commonDialect) RemoveIndexContext(ctx context.Context, tableName string, indexName string) error {
-	_, err := s.db.ExecContext(ctx, fmt.Sprintf("DROP INDEX %v", indexName))
+	_, err := s.db.Exec(fmt.Sprintf("DROP INDEX %v", indexName))
 	return err
 }
 
 func (s commonDialect) HasForeignKey(tableName string, foreignKeyName string) bool {
-	return s.HasForeignKeyContext(context.Background(), tableName, foreignKeyName)
-}
-
-func (s commonDialect) HasForeignKeyContext(ctx context.Context, tableName string, foreignKeyName string) bool {
 	return false
 }
 
 func (s commonDialect) HasTable(tableName string) bool {
-	return s.HasTableContext(context.Background(), tableName)
-}
-
-func (s commonDialect) HasTableContext(ctx context.Context, tableName string) bool {
 	var count int
-	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
-	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = ? AND table_name = ?", currentDatabase, tableName).Scan(&count)
+	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
+	s.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = ? AND table_name = ?", currentDatabase, tableName).Scan(&count)
 	return count > 0
 }
 
 func (s commonDialect) HasColumn(tableName string, columnName string) bool {
-	return s.HasColumnContext(context.Background(), tableName, columnName)
-}
-
-func (s commonDialect) HasColumnContext(ctx context.Context, tableName string, columnName string) bool {
 	var count int
-	currentDatabase, tableName := currentDatabaseAndTable(ctx, &s, tableName)
-	s.db.QueryRowContext(ctx, "SELECT count(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = ? AND table_name = ? AND column_name = ?", currentDatabase, tableName, columnName).Scan(&count)
+	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
+	s.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = ? AND table_name = ? AND column_name = ?", currentDatabase, tableName, columnName).Scan(&count)
 	return count > 0
 }
 
 func (s commonDialect) ModifyColumn(tableName string, columnName string, typ string) error {
-	return s.ModifyColumnContext(context.Background(), tableName, columnName, typ)
-}
-
-func (s commonDialect) ModifyColumnContext(ctx context.Context, tableName string, columnName string, typ string) error {
-	_, err := s.db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v TYPE %v", tableName, columnName, typ))
+	_, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %v ALTER COLUMN %v TYPE %v", tableName, columnName, typ))
 	return err
 }
 
 func (s commonDialect) CurrentDatabase() (name string) {
-	return s.CurrentDatabaseContext(context.Background())
-}
-func (s commonDialect) CurrentDatabaseContext(ctx context.Context) (name string) {
-	s.db.QueryRowContext(ctx, "SELECT DATABASE()").Scan(&name)
+	s.db.QueryRow("SELECT DATABASE()").Scan(&name)
 	return
 }
 

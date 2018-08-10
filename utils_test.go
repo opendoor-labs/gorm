@@ -3,7 +3,7 @@ package gorm_test
 import (
 	"testing"
 
-	"github.com/opendoor-labs/gorm"
+	"github.com/jinzhu/gorm"
 )
 
 func TestToDBNameGenerateFriendlyName(t *testing.T) {
