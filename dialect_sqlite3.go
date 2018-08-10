@@ -1,7 +1,6 @@
 package gorm
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -72,40 +71,24 @@ func (s *sqlite3) DataTypeOf(field *StructField) string {
 }
 
 func (s sqlite3) HasIndex(tableName string, indexName string) bool {
-	return s.HasIndexContext(context.Background(), tableName, indexName)
-}
-
-func (s sqlite3) HasIndexContext(ctx context.Context, tableName string, indexName string) bool {
 	var count int
-	s.db.QueryRowContext(ctx, fmt.Sprintf("SELECT count(*) FROM sqlite_master WHERE tbl_name = ? AND sql LIKE '%%INDEX %v ON%%'", indexName), tableName).Scan(&count)
+	s.db.QueryRow(fmt.Sprintf("SELECT count(*) FROM sqlite_master WHERE tbl_name = ? AND sql LIKE '%%INDEX %v ON%%'", indexName), tableName).Scan(&count)
 	return count > 0
 }
 
 func (s sqlite3) HasTable(tableName string) bool {
-	return s.HasTableContext(context.Background(), tableName)
-}
-
-func (s sqlite3) HasTableContext(ctx context.Context, tableName string) bool {
 	var count int
-	s.db.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?", tableName).Scan(&count)
+	s.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?", tableName).Scan(&count)
 	return count > 0
 }
 
 func (s sqlite3) HasColumn(tableName string, columnName string) bool {
-	return s.HasColumnContext(context.Background(), tableName, columnName)
-}
-
-func (s sqlite3) HasColumnContext(ctx context.Context, tableName string, columnName string) bool {
 	var count int
-	s.db.QueryRowContext(ctx, fmt.Sprintf("SELECT count(*) FROM sqlite_master WHERE tbl_name = ? AND (sql LIKE '%%\"%v\" %%' OR sql LIKE '%%%v %%');\n", columnName, columnName), tableName).Scan(&count)
+	s.db.QueryRow(fmt.Sprintf("SELECT count(*) FROM sqlite_master WHERE tbl_name = ? AND (sql LIKE '%%\"%v\" %%' OR sql LIKE '%%%v %%');\n", columnName, columnName), tableName).Scan(&count)
 	return count > 0
 }
 
 func (s sqlite3) CurrentDatabase() (name string) {
-	return s.CurrentDatabaseContext(context.Background())
-}
-
-func (s sqlite3) CurrentDatabaseContext(ctx context.Context) (name string) {
 	var (
 		ifaces   = make([]interface{}, 3)
 		pointers = make([]*string, 3)
@@ -114,7 +97,7 @@ func (s sqlite3) CurrentDatabaseContext(ctx context.Context) (name string) {
 	for i = 0; i < 3; i++ {
 		ifaces[i] = &pointers[i]
 	}
-	if err := s.db.QueryRowContext(ctx, "PRAGMA database_list").Scan(ifaces...); err != nil {
+	if err := s.db.QueryRow("PRAGMA database_list").Scan(ifaces...); err != nil {
 		return
 	}
 	if pointers[1] != nil {

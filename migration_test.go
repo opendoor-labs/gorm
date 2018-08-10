@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opendoor-labs/gorm"
+	"github.com/jinzhu/gorm"
 )
 
 type User struct {
@@ -299,16 +299,15 @@ func TestIndexes(t *testing.T) {
 	}
 
 	scope := DB.NewScope(&Email{})
-	ctx := scope.Context()
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "idx_email_email") {
 		t.Errorf("Email should have index idx_email_email")
 	}
 
-	if err := DB.Model(&Email{}).RemoveIndexContext("idx_email_email").Error; err != nil {
+	if err := DB.Model(&Email{}).RemoveIndex("idx_email_email").Error; err != nil {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
-	if scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email") {
+	if scope.Dialect().HasIndex(scope.TableName(), "idx_email_email") {
 		t.Errorf("Email's index idx_email_email should be deleted")
 	}
 
@@ -316,15 +315,15 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to create index: %+v", err)
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email should have index idx_email_email_and_user_id")
 	}
 
-	if err := DB.Model(&Email{}).RemoveIndexContext("idx_email_email_and_user_id").Error; err != nil {
+	if err := DB.Model(&Email{}).RemoveIndex("idx_email_email_and_user_id").Error; err != nil {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
-	if scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if scope.Dialect().HasIndex(scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email's index idx_email_email_and_user_id should be deleted")
 	}
 
@@ -332,7 +331,7 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Got error when tried to create index: %+v", err)
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email should have index idx_email_email_and_user_id")
 	}
 
@@ -350,11 +349,11 @@ func TestIndexes(t *testing.T) {
 		t.Errorf("Should get no duplicated email error when insert duplicated emails for a user")
 	}
 
-	if err := DB.Model(&Email{}).RemoveIndexContext("idx_email_email_and_user_id").Error; err != nil {
+	if err := DB.Model(&Email{}).RemoveIndex("idx_email_email_and_user_id").Error; err != nil {
 		t.Errorf("Got error when tried to remove index: %+v", err)
 	}
 
-	if scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_email_and_user_id") {
+	if scope.Dialect().HasIndex(scope.TableName(), "idx_email_email_and_user_id") {
 		t.Errorf("Email's index idx_email_email_and_user_id should be deleted")
 	}
 
@@ -384,12 +383,11 @@ func TestAutoMigration(t *testing.T) {
 	DB.Save(&EmailWithIdx{Email: "jinzhu@example.org", UserAgent: "pc", RegisteredAt: &now})
 
 	scope := DB.NewScope(&EmailWithIdx{})
-	ctx := scope.Context()
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_email_agent") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "idx_email_agent") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_email_with_idxes_registered_at") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "uix_email_with_idxes_registered_at") {
 		t.Errorf("Failed to create index")
 	}
 
@@ -409,11 +407,11 @@ func TestCreateAndAutomigrateTransaction(t *testing.T) {
 		}
 		DB.DropTableIfExists(&Bar{})
 
-		if ok := DB.HasTableContext("bars"); ok {
+		if ok := DB.HasTable("bars"); ok {
 			t.Errorf("Table should not exist, but does")
 		}
 
-		if ok := tx.HasTableContext("bars"); ok {
+		if ok := tx.HasTable("bars"); ok {
 			t.Errorf("Table should not exist, but does")
 		}
 	}()
@@ -428,7 +426,7 @@ func TestCreateAndAutomigrateTransaction(t *testing.T) {
 			t.Errorf("Should have been able to create the table, but couldn't: %s", err)
 		}
 
-		if ok := tx.HasTableContext(&Bar{}); !ok {
+		if ok := tx.HasTable(&Bar{}); !ok {
 			t.Errorf("The transaction should be able to see the table")
 		}
 	}()
@@ -468,24 +466,23 @@ func TestMultipleIndexes(t *testing.T) {
 	DB.Save(&MultipleIndexes{UserID: 1, Name: "jinzhu", Email: "jinzhu@example.org", Other: "foo"})
 
 	scope := DB.NewScope(&MultipleIndexes{})
-	ctx := scope.Context()
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_multipleindexes_user_name") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "uix_multipleindexes_user_name") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_multipleindexes_user_email") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "uix_multipleindexes_user_email") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "uix_multiple_indexes_email") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "uix_multiple_indexes_email") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_multipleindexes_user_other") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "idx_multipleindexes_user_other") {
 		t.Errorf("Failed to create index")
 	}
 
-	if !scope.Dialect().HasIndexContext(ctx, scope.TableName(), "idx_multiple_indexes_other") {
+	if !scope.Dialect().HasIndex(scope.TableName(), "idx_multiple_indexes_other") {
 		t.Errorf("Failed to create index")
 	}
 

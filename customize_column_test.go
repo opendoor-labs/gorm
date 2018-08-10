@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opendoor-labs/gorm"
+	"github.com/jinzhu/gorm"
 )
 
 type CustomizeColumn struct {
@@ -26,7 +26,7 @@ func TestCustomizeColumn(t *testing.T) {
 	DB.AutoMigrate(&CustomizeColumn{})
 
 	scope := DB.NewScope(&CustomizeColumn{})
-	if !scope.Dialect().HasColumnContext(scope.Context(), scope.TableName(), col) {
+	if !scope.Dialect().HasColumn(scope.TableName(), col) {
 		t.Errorf("CustomizeColumn should have column %s", col)
 	}
 
