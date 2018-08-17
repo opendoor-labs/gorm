@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	"github.com/opendoor-labs/gorm"
 )
 
 type Person struct {
