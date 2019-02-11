@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/opendoor-labs/gorm"
+	"github.com/jinzhu/gorm"
 
 	"testing"
 	"time"
