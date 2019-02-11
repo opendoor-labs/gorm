@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -59,6 +60,11 @@ func (scope *Scope) NewDB() *DB {
 // SQLDB return *sql.DB
 func (scope *Scope) SQLDB() SQLCommon {
 	return scope.db.db
+}
+
+// Ctx returns the set context or context.TODO if no context has been set.
+func (scope *Scope) Ctx() context.Context {
+	return scope.db.ctx
 }
 
 // Dialect get dialect
@@ -361,7 +367,7 @@ func (scope *Scope) Exec() *Scope {
 	defer scope.trace(NowFunc())
 
 	if !scope.HasError() {
-		if result, err := scope.SQLDB().Exec(scope.SQL, scope.SQLVars...); scope.Err(err) == nil {
+		if result, err := scope.SQLDB().ExecContext(scope.Ctx(), scope.SQL, scope.SQLVars...); scope.Err(err) == nil {
 			if count, err := result.RowsAffected(); scope.Err(err) == nil {
 				scope.db.RowsAffected = count
 			}

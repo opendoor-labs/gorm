@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"reflect"
@@ -128,12 +129,12 @@ func (s *mysql) DataTypeOf(field *StructField) string {
 }
 
 func (s mysql) RemoveIndex(tableName string, indexName string) error {
-	_, err := s.db.Exec(fmt.Sprintf("DROP INDEX %v ON %v", indexName, s.Quote(tableName)))
+	_, err := s.db.ExecContext(context.TODO(), fmt.Sprintf("DROP INDEX %v ON %v", indexName, s.Quote(tableName)))
 	return err
 }
 
 func (s mysql) ModifyColumn(tableName string, columnName string, typ string) error {
-	_, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %v MODIFY COLUMN %v %v", tableName, columnName, typ))
+	_, err := s.db.ExecContext(context.TODO(), fmt.Sprintf("ALTER TABLE %v MODIFY COLUMN %v %v", tableName, columnName, typ))
 	return err
 }
 
@@ -155,12 +156,12 @@ func (s mysql) LimitAndOffsetSQL(limit, offset interface{}) (sql string) {
 func (s mysql) HasForeignKey(tableName string, foreignKeyName string) bool {
 	var count int
 	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
-	s.db.QueryRow("SELECT count(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=? AND TABLE_NAME=? AND CONSTRAINT_NAME=? AND CONSTRAINT_TYPE='FOREIGN KEY'", currentDatabase, tableName, foreignKeyName).Scan(&count)
+	s.db.QueryRowContext(context.TODO(), "SELECT count(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=? AND TABLE_NAME=? AND CONSTRAINT_NAME=? AND CONSTRAINT_TYPE='FOREIGN KEY'", currentDatabase, tableName, foreignKeyName).Scan(&count)
 	return count > 0
 }
 
 func (s mysql) CurrentDatabase() (name string) {
-	s.db.QueryRow("SELECT DATABASE()").Scan(&name)
+	s.db.QueryRowContext(context.TODO(), "SELECT DATABASE()").Scan(&name)
 	return
 }
 
