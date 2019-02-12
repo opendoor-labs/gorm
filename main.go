@@ -202,8 +202,12 @@ func (s *DB) SubQuery() *expr {
 	return Expr(fmt.Sprintf("(%v)", scope.SQL), scope.SQLVars...)
 }
 
-// WithContext adds context to the current DB
+// WithContext adds a context to the current DB. If context is nil, use context.TODO instead.
 func (s *DB) WithContext(ctx context.Context) *DB {
+	if ctx == nil {
+		ctx = context.TODO()
+	}
+
 	dbClone := s.clone()
 	dbClone.ctx = ctx
 	return dbClone
