@@ -174,7 +174,7 @@ func (s mysql) HasTable(tableName string) bool {
 	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
 	var name string
 	// allow mysql database name with '-' character
-	if err := s.db.QueryRow(fmt.Sprintf("SHOW TABLES FROM `%s` WHERE `Tables_in_%s` = ?", currentDatabase, currentDatabase), tableName).Scan(&name); err != nil {
+	if err := s.db.QueryRowContext(context.TODO(), fmt.Sprintf("SHOW TABLES FROM `%s` WHERE `Tables_in_%s` = ?", currentDatabase, currentDatabase), tableName).Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			return false
 		}
@@ -186,7 +186,7 @@ func (s mysql) HasTable(tableName string) bool {
 
 func (s mysql) HasIndex(tableName string, indexName string) bool {
 	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
-	if rows, err := s.db.Query(fmt.Sprintf("SHOW INDEXES FROM `%s` FROM `%s` WHERE Key_name = ?", tableName, currentDatabase), indexName); err != nil {
+	if rows, err := s.db.QueryContext(context.TODO(), fmt.Sprintf("SHOW INDEXES FROM `%s` FROM `%s` WHERE Key_name = ?", tableName, currentDatabase), indexName); err != nil {
 		panic(err)
 	} else {
 		defer rows.Close()
@@ -196,7 +196,7 @@ func (s mysql) HasIndex(tableName string, indexName string) bool {
 
 func (s mysql) HasColumn(tableName string, columnName string) bool {
 	currentDatabase, tableName := currentDatabaseAndTable(&s, tableName)
-	if rows, err := s.db.Query(fmt.Sprintf("SHOW COLUMNS FROM `%s` FROM `%s` WHERE Field = ?", tableName, currentDatabase), columnName); err != nil {
+	if rows, err := s.db.QueryContext(context.TODO(), fmt.Sprintf("SHOW COLUMNS FROM `%s` FROM `%s` WHERE Field = ?", tableName, currentDatabase), columnName); err != nil {
 		panic(err)
 	} else {
 		defer rows.Close()
