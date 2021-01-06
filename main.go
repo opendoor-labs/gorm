@@ -13,6 +13,7 @@ import (
 
 // DB contains information for current db connection
 type DB struct {
+	sync.RWMutex
 	Value        interface{}
 	Error        error
 	RowsAffected int64
@@ -31,6 +32,9 @@ type DB struct {
 	callbacks     *Callback
 	dialect       Dialect
 	singularTable bool
+
+	// function to be used to override the creating of a new timestamp
+	nowFuncOverride func() time.Time
 }
 
 type logModeValue int
@@ -122,7 +126,10 @@ func (s *DB) Close() error {
 // DB get `*sql.DB` from current connection
 // If the underlying database connection is not a *sql.DB, returns nil
 func (s *DB) DB() *sql.DB {
-	db, _ := s.db.(*sql.DB)
+	db, ok := s.db.(*sql.DB)
+	if !ok {
+		panic("can't support full GORM on currently status, maybe this is a TX instance.")
+	}
 	return db
 }
 
@@ -140,7 +147,7 @@ func (s *DB) Dialect() Dialect {
 //     db.Callback().Create().Register("update_created_at", updateCreated)
 // Refer https://jinzhu.github.io/gorm/development.html#callbacks
 func (s *DB) Callback() *Callback {
-	s.parent.callbacks = s.parent.callbacks.clone()
+	s.parent.callbacks = s.parent.callbacks.clone(s.logger)
 	return s.parent.callbacks
 }
 
@@ -159,6 +166,22 @@ func (s *DB) LogMode(enable bool) *DB {
 	return s
 }
 
+// SetNowFuncOverride set the function to be used when creating a new timestamp
+func (s *DB) SetNowFuncOverride(nowFuncOverride func() time.Time) *DB {
+	s.nowFuncOverride = nowFuncOverride
+	return s
+}
+
+// Get a new timestamp, using the provided nowFuncOverride on the DB instance if set,
+// otherwise defaults to the global NowFunc()
+func (s *DB) nowFunc() time.Time {
+	if s.nowFuncOverride != nil {
+		return s.nowFuncOverride()
+	}
+
+	return NowFunc()
+}
+
 // BlockGlobalUpdate if true, generates an error on update/delete without where clause.
 // This is to prevent eventual error with empty objects updates/deletions
 func (s *DB) BlockGlobalUpdate(enable bool) *DB {
@@ -173,7 +196,8 @@ func (s *DB) HasBlockGlobalUpdate() bool {
 
 // SingularTable use singular table by default
 func (s *DB) SingularTable(enable bool) {
-	modelStructsMap = sync.Map{}
+	s.parent.Lock()
+	defer s.parent.Unlock()
 	s.parent.singularTable = enable
 }
 
@@ -181,11 +205,17 @@ func (s *DB) SingularTable(enable bool) {
 func (s *DB) NewScope(value interface{}) *Scope {
 	dbClone := s.clone()
 	dbClone.Value = value
-	return &Scope{db: dbClone, Search: dbClone.search, Value: value}
+	scope := &Scope{db: dbClone, Value: value}
+	if s.search != nil {
+		scope.Search = s.search.clone()
+	} else {
+		scope.Search = &search{}
+	}
+	return scope
 }
 
-// QueryExpr returns the query as expr object
-func (s *DB) QueryExpr() *expr {
+// QueryExpr returns the query as SqlExpr object
+func (s *DB) QueryExpr() *SqlExpr {
 	scope := s.NewScope(s.Value)
 	scope.InstanceSet("skip_bindvar", true)
 	scope.prepareQuerySQL()
@@ -194,7 +224,7 @@ func (s *DB) QueryExpr() *expr {
 }
 
 // SubQuery returns the query as sub query
-func (s *DB) SubQuery() *expr {
+func (s *DB) SubQuery() *SqlExpr {
 	scope := s.NewScope(s.Value)
 	scope.InstanceSet("skip_bindvar", true)
 	scope.prepareQuerySQL()
@@ -312,6 +342,7 @@ func (s *DB) Assign(attrs ...interface{}) *DB {
 func (s *DB) First(out interface{}, where ...interface{}) *DB {
 	newScope := s.NewScope(out)
 	newScope.Search.Limit(1)
+
 	return newScope.Set("gorm:order_by_primary_key", "ASC").
 		inlineCondition(where...).callCallbacks(s.parent.callbacks.queries).db
 }
@@ -419,6 +450,7 @@ func (s *DB) FirstOrCreate(out interface{}, where ...interface{}) *DB {
 }
 
 // Update update attributes with callbacks, refer: https://jinzhu.github.io/gorm/crud.html#update
+// WARNING when update with struct, GORM will not update fields that with zero value
 func (s *DB) Update(attrs ...interface{}) *DB {
 	return s.Updates(toSearchableMap(attrs...), true)
 }
@@ -451,7 +483,7 @@ func (s *DB) Save(value interface{}) *DB {
 	if !scope.PrimaryKeyZero() {
 		newDB := scope.callCallbacks(s.parent.callbacks.updates).db
 		if newDB.Error == nil && newDB.RowsAffected == 0 {
-			return s.New().FirstOrCreate(value)
+			return s.New().Table(scope.TableName()).FirstOrCreate(value)
 		}
 		return newDB
 	}
@@ -465,6 +497,7 @@ func (s *DB) Create(value interface{}) *DB {
 }
 
 // Delete delete value match given conditions, if the value has primary key, then will including the primary key as condition
+// WARNING If model has DeletedAt field, GORM will only set field DeletedAt's value to current time
 func (s *DB) Delete(value interface{}, where ...interface{}) *DB {
 	return s.NewScope(value).inlineCondition(where...).callCallbacks(s.parent.callbacks.deletes).db
 }
@@ -508,11 +541,43 @@ func (s *DB) Debug() *DB {
 	return s.clone().LogMode(true)
 }
 
-// Begin begin a transaction
+// Transaction start a transaction as a block,
+// return error will rollback, otherwise to commit.
+func (s *DB) Transaction(fc func(tx *DB) error) (err error) {
+
+	if _, ok := s.db.(*sql.Tx); ok {
+		return fc(s)
+	}
+
+	panicked := true
+	tx := s.Begin()
+	defer func() {
+		// Make sure to rollback when panic, Block error or Commit error
+		if panicked || err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	err = fc(tx)
+
+	if err == nil {
+		err = tx.Commit().Error
+	}
+
+	panicked = false
+	return
+}
+
+// Begin begins a transaction
 func (s *DB) Begin() *DB {
+	return s.BeginTx(context.Background(), &sql.TxOptions{})
+}
+
+// BeginTx begins a transaction with options
+func (s *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) *DB {
 	c := s.clone()
 	if db, ok := c.db.(sqlDb); ok && db != nil {
-		tx, err := db.Begin()
+		tx, err := db.BeginTx(ctx, opts)
 		c.db = interface{}(tx).(SQLCommon)
 
 		c.dialect.SetDB(c.db)
@@ -538,7 +603,26 @@ func (s *DB) Commit() *DB {
 func (s *DB) Rollback() *DB {
 	var emptySQLTx *sql.Tx
 	if db, ok := s.db.(sqlTx); ok && db != nil && db != emptySQLTx {
-		s.AddError(db.Rollback())
+		if err := db.Rollback(); err != nil && err != sql.ErrTxDone {
+			s.AddError(err)
+		}
+	} else {
+		s.AddError(ErrInvalidTransaction)
+	}
+	return s
+}
+
+// RollbackUnlessCommitted rollback a transaction if it has not yet been
+// committed.
+func (s *DB) RollbackUnlessCommitted() *DB {
+	var emptySQLTx *sql.Tx
+	if db, ok := s.db.(sqlTx); ok && db != nil && db != emptySQLTx {
+		err := db.Rollback()
+		// Ignore the error indicating that the transaction has already
+		// been committed.
+		if err != sql.ErrTxDone {
+			s.AddError(err)
+		}
 	} else {
 		s.AddError(ErrInvalidTransaction)
 	}
@@ -739,7 +823,7 @@ func (s *DB) AddError(err error) error {
 	if err != nil {
 		if err != ErrRecordNotFound {
 			if s.logMode == defaultLogMode {
-				go s.print(fileWithLineNum(), err)
+				go s.print("error", fileWithLineNum(), err)
 			} else {
 				s.log(err)
 			}
@@ -781,6 +865,7 @@ func (s *DB) clone() *DB {
 		Error:             s.Error,
 		blockGlobalUpdate: s.blockGlobalUpdate,
 		dialect:           newDialect(s.dialect.GetName(), s.db),
+		nowFuncOverride:   s.nowFuncOverride,
 	}
 
 	s.values.Range(func(k, v interface{}) bool {
